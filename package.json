@@ -1,0 +1,20 @@
+{
+  "name": "augurrank-server",
+  "version": "0.0.0",
+  "private": true,
+  "engines": {
+    "node": "20.x.x"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "node --import=specifier-resolution-node/register src/index.js",
+    "start-local": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/legacy_credentials/brace@brace.to/augurrank-001-adeb2f2dcdc2.json nodemon --import=specifier-resolution-node/register src/index.js",
+    "deploy": "gcloud app deploy --no-promote --project=augurrank-001"
+  },
+  "dependencies": {
+    "@google-cloud/datastore": "^9.1.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "specifier-resolution-node": "^1.1.4"
+  }
+}
