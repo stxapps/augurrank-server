@@ -25,6 +25,7 @@ const addNewsletterEmail = async (logKey, email) => {
 
     transaction.save(newEntity)
     await transaction.commit();
+    console.log(`(${logKey}) Saved to Datastore`);
   } catch (error) {
     await transaction.rollback();
     throw error;

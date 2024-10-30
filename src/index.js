@@ -52,10 +52,9 @@ app.post('/add-newsletter-email', runAsyncWrapper(async (req, res) => {
   }
 
   await dataApi.addNewsletterEmail(logKey, email);
-  console.log(`(${logKey}) Saved to Datastore`);
 
   console.log(`(${logKey}) /add-newsletter-email finished`);
-  res.status(200).end();
+  res.send(JSON.stringify(results));
 }));
 
 // Listen to the App Engine-specified port, or 8088 otherwise
