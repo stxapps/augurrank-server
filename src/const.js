@@ -9,7 +9,7 @@ export const ALLOWED_ORIGINS = [
   'https://192.168.1.44:3000',
   'https://192.168.1.45:3000',
   'https://192.168.1.46:3000',
-  '',
+  'https://d1uzxgq8or64c4.cloudfront.net',
   'https://augurrank.com',
 ];
 
