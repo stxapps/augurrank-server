@@ -1,0 +1,2 @@
+export const AUGURRANK_SERVER_TASKER_URL = '';
+export const AUGURRANK_SERVER_TASKER_EMAIL = '';

@@ -9,12 +9,16 @@
   "scripts": {
     "start": "node --import=specifier-resolution-node/register src/index.js",
     "start-local": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/legacy_credentials/brace@brace.to/augurrank-001-bde1aaaabf2f.json nodemon --import=specifier-resolution-node/register src/index.js",
-    "deploy": "gcloud app deploy --no-promote --project=augurrank-001"
+    "deploy": "gcloud app deploy --no-promote --project=augurrank-001",
+    "create-datastore-indexes": "gcloud datastore indexes create index.yaml --project=augurrank-001",
+    "cleanup-datastore-indexes": "gcloud datastore indexes cleanup index.yaml --project=augurrank-001"
   },
   "dependencies": {
     "@google-cloud/datastore": "^9.1.0",
+    "@google-cloud/tasks": "^5.5.2",
+    "@stacks/encryption": "^7.0.2",
     "cors": "^2.8.5",
-    "express": "^4.21.1",
+    "express": "^4.21.2",
     "specifier-resolution-node": "^1.1.4"
   }
 }

@@ -21,6 +21,22 @@ export const ERROR = 'ERROR';
 
 // Table
 export const NEWSLETTER_EMAIL = 'NewsletterEmail';
+export const USER = 'User';
+export const PRED = 'Pred';
+export const TOTAL = 'Total';
 
 // Status
 export const ACTIVE = 'Active';
+
+export const TEST_STRING = 'Vision on Chain';
+
+export const GAME_BTC = 'GameBtc';
+export const GAMES = [GAME_BTC];
+
+export const PDG = 'pending';
+export const SCS = 'success';
+export const ABT_BY_RES = 'abort_by_response';
+export const ABT_BY_PC = 'abort_by_post_condition';
+export const ABT_BY_NF = 'abort_by_not_found';
+
+export const N_PREDS = 30;
