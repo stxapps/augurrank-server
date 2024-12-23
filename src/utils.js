@@ -1,4 +1,9 @@
-import { GAMES, PDG, SCS } from './const';
+import {
+  GAMES, PRED_STATUS_INIT, PRED_STATUS_IN_MEMPOOL, PRED_STATUS_PUT_OK,
+  PRED_STATUS_PUT_ERROR, PRED_STATUS_CONFIRMED_OK, PRED_STATUS_CONFIRMED_ERROR,
+  PRED_STATUS_VERIFIABLE, PRED_STATUS_VERIFYING, PRED_STATUS_VERIFIED_OK,
+  PRED_STATUS_VERIFIED_ERROR, PDG, SCS,
+} from './const';
 
 export const runAsyncWrapper = (callback) => {
   return function (req, res, next) {
@@ -120,4 +125,32 @@ export const mergePreds = (...preds) => {
   else if (isString(bin.vStatus.updg)) newPred.vStatus = bin.vStatus.updg;
 
   return newPred;
+};
+
+export const getPredStatus = (pred, burnHeight = null) => {
+  if ('pStatus' in pred && ![PDG, SCS].includes(pred.pStatus)) {
+    return PRED_STATUS_PUT_ERROR;
+  }
+  if ('cStatus' in pred && ![PDG, SCS].includes(pred.cStatus)) {
+    return PRED_STATUS_CONFIRMED_ERROR;
+  }
+  if ('vStatus' in pred && ![PDG, SCS].includes(pred.vStatus)) {
+    return PRED_STATUS_VERIFIED_ERROR;
+  }
+
+  if (pred.vStatus === SCS) return PRED_STATUS_VERIFIED_OK;
+  if ('vTxId' in pred) return PRED_STATUS_VERIFYING;
+  if (pred.cStatus === SCS) {
+    if (
+      isNumber(pred.targetBurnHeight) &&
+      isNumber(burnHeight) &&
+      pred.targetBurnHeight < burnHeight
+    ) {
+      return PRED_STATUS_VERIFIABLE;
+    }
+    return PRED_STATUS_CONFIRMED_OK;
+  }
+  if (pred.pStatus === SCS) return PRED_STATUS_PUT_OK;
+  if ('cTxId' in pred) return PRED_STATUS_IN_MEMPOOL;
+  return PRED_STATUS_INIT;
 };

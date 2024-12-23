@@ -1,8 +1,11 @@
 import { Datastore, PropertyFilter } from '@google-cloud/datastore';
 import { CloudTasksClient } from '@google-cloud/tasks';
 
-import { NEWSLETTER_EMAIL, USER, PRED, TOTAL, ACTIVE, N_PREDS, GAME_BTC } from './const';
-import { isObject, isNumber, mergePreds } from './utils';
+import {
+  NEWSLETTER_EMAIL, USER, PRED, TOTAL, ACTIVE, N_PREDS, GAME_BTC,
+  PRED_STATUS_CONFIRMED_OK,
+} from './const';
+import { isObject, isNumber, mergePreds, getPredStatus } from './utils';
 import { AUGURRANK_SERVER_TASKER_URL, AUGURRANK_SERVER_TASKER_EMAIL } from './keys';
 
 const datastore = new Datastore();
@@ -180,17 +183,25 @@ const getStats = async (appBtcAddr, game) => {
   const [entities] = await datastore.get(keys);
 
   const stats = {};
-  for (let i = 0; i < keys.length; i++) {
-    const [key, entity] = [keys[i], entities[i]];
-    if (!isObject(entity) || !isNumber(entity.value)) continue;
+  if (Array.isArray(entities)) {
+    for (let i = 0; i < keyNames.length; i++) {
+      const [kn, entity] = [keyNames[i], entities[i]];
+      if (!isObject(entity) || !isNumber(entity.outcome)) continue;
 
-    stats[key] = entity.value;
+      stats[kn] = entity.outcome;
+    }
   }
 
   return stats;
 };
 
 const addTaskToQueue = async (logKey, oldUser, newUser, oldPred, newPred) => {
+  const doAdd = (
+    getPredStatus(newPred) === PRED_STATUS_CONFIRMED_OK &&
+    (oldPred === null || getPredStatus(oldPred) !== PRED_STATUS_CONFIRMED_OK)
+  )
+  if (!doAdd) return;
+
   const [project, location] = ['augurrank-001', 'us-central1'];
   const queue = 'augurrank-server-tasker';
 
@@ -278,8 +289,8 @@ const entityToUser = (entity) => {
   const user = {
     appBtcAddr: entity[datastore.KEY].name,
     stxAddr: entity.stxAddr,
-    createDate: entity.createDate.now(),
-    updateDate: entity.updateDate.now(),
+    createDate: entity.createDate.getTime(),
+    updateDate: entity.updateDate.getTime(),
   };
   if ('didAgreeTerms' in entity) user.didAgreeTerms = entity.didAgreeTerms;
   if ('isVerified' in entity) user.isVerified = entity.isVerified;
@@ -293,8 +304,8 @@ const entityToPred = (entity) => {
     game: entity.game,
     contract: entity.contract,
     value: entity.value,
-    createDate: entity.createDate.now(),
-    updateDate: entity.updateDate.now(),
+    createDate: entity.createDate.getTime(),
+    updateDate: entity.updateDate.getTime(),
     stxAddr: entity.stxAddr,
   };
   if ('cTxId' in entity) pred.cTxId = entity.cTxId;
