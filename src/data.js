@@ -1,11 +1,11 @@
-import { Datastore, PropertyFilter } from '@google-cloud/datastore';
+import { Datastore, PropertyFilter, and } from '@google-cloud/datastore';
 import { CloudTasksClient } from '@google-cloud/tasks';
 
 import {
   NEWSLETTER_EMAIL, USER, PRED, TOTAL, ACTIVE, N_PREDS, GAME_BTC,
-  PRED_STATUS_CONFIRMED_OK,
+  PRED_STATUS_CONFIRMED_OK, SCS,
 } from './const';
-import { isObject, isNumber, mergePreds, getPredStatus } from './utils';
+import { isObject, isNumber, mergePreds, getPredStatus, isNotNullIn } from './utils';
 import { AUGURRANK_SERVER_TASKER_URL, AUGURRANK_SERVER_TASKER_EMAIL } from './keys';
 
 const datastore = new Datastore();
@@ -89,8 +89,10 @@ const getUser = async (appBtcAddr) => {
 
 const getNewestPred = async (appBtcAddr, game) => {
   const query = datastore.createQuery(PRED);
-  query.filter(new PropertyFilter('appBtcAddr', '=', appBtcAddr));
-  query.filter(new PropertyFilter('game', '=', game));
+  query.filter(and([
+    new PropertyFilter('appBtcAddr', '=', appBtcAddr),
+    new PropertyFilter('game', '=', game),
+  ]));
   query.order('createDate', { descending: true });
   query.limit(1);
   const [entities] = await datastore.runQuery(query);
@@ -122,12 +124,12 @@ const queryPreds = async (appBtcAddr, game, createDate, operator, excludingIds) 
 
   const limit = N_PREDS + excludingIds.length + 1;
 
+  const fltrs = /** @type any[] */([new PropertyFilter('appBtcAddr', '=', appBtcAddr)]);
+  if (game !== 'me') fltrs.push(new PropertyFilter('game', '=', game));
+  fltrs.push(new PropertyFilter('createDate', operator, new Date(createDate)));
+
   const query = datastore.createQuery(PRED);
-  query.filter(new PropertyFilter('appBtcAddr', '=', appBtcAddr));
-  if (game !== 'me') {
-    query.filter(new PropertyFilter('game', '=', game));
-  }
-  query.filter(new PropertyFilter('createDate', operator, new Date(createDate)));
+  query.filter(and(fltrs));
   query.order('createDate', { descending });
   query.limit(limit);
 
@@ -241,6 +243,9 @@ const userToEntityData = (user) => {
 };
 
 const predToEntityData = (appBtcAddr, pred) => {
+  // Need cStatus, vTxId, and vStatus for Datastore queries in worker.
+  let isCstRqd = false, isVxiRqd = false, isVstRqd = false;
+
   const data = [
     { name: 'game', value: pred.game },
     { name: 'contract', value: pred.contract },
@@ -249,9 +254,17 @@ const predToEntityData = (appBtcAddr, pred) => {
     { name: 'updateDate', value: new Date(pred.updateDate) },
     { name: 'stxAddr', value: pred.stxAddr },
   ];
-  if ('cTxId' in pred) data.push({ name: 'cTxId', value: pred.cTxId });
+  if ('cTxId' in pred) {
+    data.push({ name: 'cTxId', value: pred.cTxId });
+    isCstRqd = true;
+  }
   if ('pStatus' in pred) data.push({ name: 'pStatus', value: pred.pStatus });
-  if ('cStatus' in pred) data.push({ name: 'cStatus', value: pred.cStatus });
+  if ('cStatus' in pred) {
+    data.push({ name: 'cStatus', value: pred.cStatus });
+    if (pred.cStatus === SCS) isVxiRqd = true;
+  } else if (isCstRqd) {
+    data.push({ name: 'cStatus', value: null });
+  }
   if ('anchorHeight' in pred) {
     data.push({ name: 'anchorHeight', value: pred.anchorHeight });
   }
@@ -264,11 +277,20 @@ const predToEntityData = (appBtcAddr, pred) => {
   if ('targetBurnHeight' in pred) {
     data.push({ name: 'targetBurnHeight', value: pred.targetBurnHeight });
   }
-  if ('vTxId' in pred) data.push({ name: 'vTxId', value: pred.vTxId });
+  if ('vTxId' in pred) {
+    data.push({ name: 'vTxId', value: pred.vTxId });
+    isVstRqd = true;
+  } else if (isVxiRqd) {
+    data.push({ name: 'vTxId', value: null });
+  }
   if ('targetHeight' in pred) {
     data.push({ name: 'targetHeight', value: pred.targetHeight });
   }
-  if ('vStatus' in pred) data.push({ name: 'vStatus', value: pred.vStatus });
+  if ('vStatus' in pred) {
+    data.push({ name: 'vStatus', value: pred.vStatus });
+  } else if (isVstRqd) {
+    data.push({ name: 'vStatus', value: null });
+  }
   if ('anchorPrice' in pred) {
     data.push({ name: 'anchorPrice', value: pred.anchorPrice });
   }
@@ -292,8 +314,8 @@ const entityToUser = (entity) => {
     createDate: entity.createDate.getTime(),
     updateDate: entity.updateDate.getTime(),
   };
-  if ('didAgreeTerms' in entity) user.didAgreeTerms = entity.didAgreeTerms;
-  if ('isVerified' in entity) user.isVerified = entity.isVerified;
+  if (isNotNullIn(entity, 'didAgreeTerms')) user.didAgreeTerms = entity.didAgreeTerms;
+  if (isNotNullIn(entity, 'isVerified')) user.isVerified = entity.isVerified;
 
   return user;
 };
@@ -308,19 +330,23 @@ const entityToPred = (entity) => {
     updateDate: entity.updateDate.getTime(),
     stxAddr: entity.stxAddr,
   };
-  if ('cTxId' in entity) pred.cTxId = entity.cTxId;
-  if ('pStatus' in entity) pred.pStatus = entity.pStatus;
-  if ('cStatus' in entity) pred.cStatus = entity.cStatus;
-  if ('anchorHeight' in entity) pred.anchorHeight = entity.anchorHeight;
-  if ('anchorBurnHeight' in entity) pred.anchorBurnHeight = entity.anchorBurnHeight;
-  if ('seq' in entity) pred.seq = entity.seq;
-  if ('targetBurnHeight' in entity) pred.targetBurnHeight = entity.targetBurnHeight;
-  if ('vTxId' in entity) pred.vTxId = entity.vTxId;
-  if ('targetHeight' in entity) pred.targetHeight = entity.targetHeight;
-  if ('vStatus' in entity) pred.vStatus = entity.vStatus;
-  if ('anchorPrice' in entity) pred.anchorPrice = entity.anchorPrice;
-  if ('targetPrice' in entity) pred.targetPrice = entity.targetPrice;
-  if ('correct' in entity) pred.correct = entity.correct;
+  if (isNotNullIn(entity, 'cTxId')) pred.cTxId = entity.cTxId;
+  if (isNotNullIn(entity, 'pStatus')) pred.pStatus = entity.pStatus;
+  if (isNotNullIn(entity, 'cStatus')) pred.cStatus = entity.cStatus;
+  if (isNotNullIn(entity, 'anchorHeight')) pred.anchorHeight = entity.anchorHeight;
+  if (isNotNullIn(entity, 'anchorBurnHeight')) {
+    pred.anchorBurnHeight = entity.anchorBurnHeight;
+  }
+  if (isNotNullIn(entity, 'seq')) pred.seq = entity.seq;
+  if (isNotNullIn(entity, 'targetBurnHeight')) {
+    pred.targetBurnHeight = entity.targetBurnHeight;
+  }
+  if (isNotNullIn(entity, 'vTxId')) pred.vTxId = entity.vTxId;
+  if (isNotNullIn(entity, 'targetHeight')) pred.targetHeight = entity.targetHeight;
+  if (isNotNullIn(entity, 'vStatus')) pred.vStatus = entity.vStatus;
+  if (isNotNullIn(entity, 'anchorPrice')) pred.anchorPrice = entity.anchorPrice;
+  if (isNotNullIn(entity, 'targetPrice')) pred.targetPrice = entity.targetPrice;
+  if (isNotNullIn(entity, 'correct')) pred.correct = entity.correct;
 
   return pred;
 };

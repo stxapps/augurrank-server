@@ -18,7 +18,7 @@ export const getReferrer = (request) => {
 };
 
 export const randomString = (length) => {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
   const charactersLength = characters.length;
 
   let result = '';
@@ -153,4 +153,8 @@ export const getPredStatus = (pred, burnHeight = null) => {
   if (pred.pStatus === SCS) return PRED_STATUS_PUT_OK;
   if ('cTxId' in pred) return PRED_STATUS_IN_MEMPOOL;
   return PRED_STATUS_INIT;
+};
+
+export const isNotNullIn = (entity, key) => {
+  return key in entity && entity[key] !== null;
 };
