@@ -215,7 +215,7 @@ const addTaskToQueue = async (logKey, oldUser, newUser, oldPred, newPred) => {
       url: AUGURRANK_SERVER_TASKER_URL,
       body: Buffer.from(JSON.stringify({
         oldUser, newUser, oldPred, newPred,
-      })).toString("base64"),
+      })).toString('base64'),
       oidcToken: { serviceAccountEmail: AUGURRANK_SERVER_TASKER_EMAIL },
     },
   };

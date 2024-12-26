@@ -75,7 +75,9 @@ export const validatePred = (pred) => {
   if ('vStatus' in pred && !isString(pred.vStatus)) return false;
   if ('anchorPrice' in pred && !isNumber(pred.anchorPrice)) return false;
   if ('targetPrice' in pred && !isNumber(pred.targetPrice)) return false;
-  if ('correct' in pred && ![true, false].includes(pred.correct)) return false;
+  if (
+    'correct' in pred && !['TRUE', 'FALSE', 'N/A'].includes(pred.correct)
+  ) return false;
 
   return true;
 };
