@@ -108,6 +108,7 @@ app.post('/game', runAsyncWrapper(async (req, res) => {
   const user = await dataApi.getUser(appBtcAddr);
   if (!isObject(user)) {
     console.log(`(${logKey}) Not found user, just return`);
+    [results.pred, results.stats] = [null, {}];
     res.send(results);
     return;
   }
@@ -122,7 +123,7 @@ app.post('/game', runAsyncWrapper(async (req, res) => {
   if (user.isVerified === true) results.isVerified = user.isVerified;
 
   const pred = await dataApi.getNewestPred(appBtcAddr, game);
-  if (isObject(pred)) results.pred = pred;
+  results.pred = pred;
 
   const stats = await dataApi.getStats(appBtcAddr, game);
   results.stats = stats;
@@ -173,6 +174,7 @@ app.post('/me', runAsyncWrapper(async (req, res) => {
   const user = await dataApi.getUser(appBtcAddr);
   if (!isObject(user)) {
     console.log(`(${logKey}) Not found user, just return`);
+    [results.stats, results.preds, results.hasMore] = [{}, [], false];
     res.send(results);
     return;
   }
@@ -257,6 +259,16 @@ app.post('/preds', runAsyncWrapper(async (req, res) => {
   const user = await dataApi.getUser(appBtcAddr);
   if (!isObject(user)) {
     console.log(`(${logKey}) Not found user, just return`);
+    if (apiCode === 1) {
+      results.preds = [];
+    } else if (apiCode === 2) {
+      [results.preds, results.hasMore] = [[], false];
+    } else {
+      console.log(`(${logKey}) Invalid apiCode, return ERROR`);
+      results.status = ERROR;
+      res.status(500).send(results);
+      return;
+    }
     res.send(results);
     return;
   }
@@ -274,12 +286,12 @@ app.post('/preds', runAsyncWrapper(async (req, res) => {
     const { preds, hasMore } = await dataApi.queryPreds(
       appBtcAddr, game, createDate, operator, excludingIds
     );
-    results.preds = preds;
-    results.hasMore = hasMore;
+    [results.preds, results.hasMore] = [preds, hasMore];
   } else {
     console.log(`(${logKey}) Invalid apiCode, return ERROR`);
     results.status = ERROR;
     res.status(500).send(results);
+    return;
   }
 
   console.log(`(${logKey}) /preds finished`);
