@@ -160,25 +160,25 @@ const getStats = async (appBtcAddr, game) => {
   const keyNames = [];
   if (game === GAME_BTC) {
     keyNames.push('GameBtc-count-appBtcAddr'); // number of participants
-    keyNames.push('GameBtc-up-verified_ok-true-count'); // wins
-    keyNames.push('GameBtc-up-verified_ok-false-count'); // loses
-    keyNames.push('GameBtc-down-verified_ok-true-count'); // wins
-    keyNames.push('GameBtc-down-verified_ok-false-count'); // loses
+    keyNames.push('GameBtc-up-verified_ok-TRUE-count'); // wins
+    keyNames.push('GameBtc-up-verified_ok-FALSE-count'); // losses
+    keyNames.push('GameBtc-down-verified_ok-TRUE-count'); // wins
+    keyNames.push('GameBtc-down-verified_ok-FALSE-count'); // losses
     keyNames.push('GameBtc-up-confirmed_ok-count'); // up pending
     keyNames.push('GameBtc-down-confirmed_ok-count'); // down pending
   } else if (game === 'me') {
-    keyNames.push(`${appBtcAddr}-up-verified_ok-true-count`); // wins
-    keyNames.push(`${appBtcAddr}-up-verified_ok-false-count`); // loses
-    keyNames.push(`${appBtcAddr}-down-verified_ok-true-count`); // wins
-    keyNames.push(`${appBtcAddr}-down-verified_ok-false-count`); // loses
+    keyNames.push(`${appBtcAddr}-up-verified_ok-TRUE-count`); // wins
+    keyNames.push(`${appBtcAddr}-up-verified_ok-FALSE-count`); // losses
+    keyNames.push(`${appBtcAddr}-down-verified_ok-TRUE-count`); // wins
+    keyNames.push(`${appBtcAddr}-down-verified_ok-FALSE-count`); // losses
     keyNames.push(`${appBtcAddr}-up-confirmed_ok-count`); // up pending
     keyNames.push(`${appBtcAddr}-down-confirmed_ok-count`); // down pending
     keyNames.push(`${appBtcAddr}-confirmed_ok-count-cont-day`); // continue days so far
-    keyNames.push(`${appBtcAddr}-verified_ok-true-count-cont`); // cont. true so far
-    keyNames.push(`${appBtcAddr}-verified_ok-false-count-cont`); // cont. false so far
+    keyNames.push(`${appBtcAddr}-verified_ok-TRUE-count-cont`); // cont. wins so far
+    keyNames.push(`${appBtcAddr}-verified_ok-FALSE-count-cont`); // cont. losses so far
     keyNames.push(`${appBtcAddr}-confirmed_ok-max-cont-day`); // max cont. days
-    keyNames.push(`${appBtcAddr}-verified_ok-true-max-cont`); // max cont. true
-    keyNames.push(`${appBtcAddr}-verified_ok-false-max-cont`); // max cont. false
+    keyNames.push(`${appBtcAddr}-verified_ok-TRUE-max-cont`); // max cont. wins
+    keyNames.push(`${appBtcAddr}-verified_ok-FALSE-max-cont`); // max cont. losses
   }
 
   const keys = keyNames.map(kn => datastore.key([TOTAL, kn]));
