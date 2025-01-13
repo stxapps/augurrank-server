@@ -1,0 +1,30 @@
+indexes:
+
+- kind: Pred
+  properties:
+  - name: appBtcAddr
+  - name: game
+  - name: createDate
+    direction: desc
+
+- kind: Pred
+  properties:
+  - name: appBtcAddr
+  - name: createDate
+    direction: desc
+
+- kind: Pred
+  properties:
+  - name: cStatus
+  - name: createDate
+
+- kind: Pred
+  properties:
+  - name: vTxId
+  - name: targetBurnHeight
+  - name: createDate
+
+- kind: Pred
+  properties:
+  - name: vStatus
+  - name: createDate
