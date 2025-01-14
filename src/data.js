@@ -186,11 +186,9 @@ const getStats = async (appBtcAddr, game) => {
 
   const stats = {};
   if (Array.isArray(entities)) {
-    for (let i = 0; i < keyNames.length; i++) {
-      const [kn, entity] = [keyNames[i], entities[i]];
+    for (const entity of entities) {
       if (!isObject(entity) || !isNumber(entity.outcome)) continue;
-
-      stats[kn] = entity.outcome;
+      stats[entity[datastore.KEY].name] = entity.outcome;
     }
   }
 
@@ -210,7 +208,7 @@ const addTaskToQueue = async (logKey, oldUser, newUser, oldPred, newPred) => {
   const parent = tasks.queuePath(project, location, queue);
   const task = {
     httpRequest: {
-      headers: { 'Content-Type': 'application/json', },
+      headers: { 'Content-Type': 'application/json' },
       httpMethod: /** @type any */('POST'),
       url: AUGURRANK_SERVER_TASKER_URL,
       body: Buffer.from(JSON.stringify({
@@ -221,7 +219,7 @@ const addTaskToQueue = async (logKey, oldUser, newUser, oldPred, newPred) => {
   };
 
   try {
-    tasks.createTask({ parent, task });
+    await tasks.createTask({ parent, task });
   } catch (error) {
     console.error(`(${logKey}) addTaskToQueue error`, error);
   }
