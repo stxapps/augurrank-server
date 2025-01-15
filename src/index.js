@@ -230,7 +230,7 @@ app.post('/preds', runAsyncWrapper(async (req, res) => {
   let apiCode = 0;
 
   const { ids, game, createDate, operator, excludingIds } = reqBody;
-  if (Array.isArray(ids) && ids.length <= N_PREDS) {
+  if (Array.isArray(ids) && ids.length > 0 && ids.length <= N_PREDS) {
     apiCode = 1;
   } else if (
     [...GAMES, 'me'].includes(game) &&
