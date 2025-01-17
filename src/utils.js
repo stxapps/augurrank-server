@@ -129,6 +129,43 @@ export const mergePreds = (...preds) => {
   return newPred;
 };
 
+export const rectifyNewPred = (oldPred, newPred) => {
+  const fixedAttrs = [
+    'id', 'game', 'contract', 'value', 'createDate', 'stxAddr', 'cTxId', 'anchorHeight',
+    'anchorBurnHeight', 'seq', 'targetBurnHeight',
+  ];
+  const invalidAttrs = [
+    'vTxId', 'targetHeight', 'vStatus', 'anchorPrice', 'targetPrice', 'correct',
+  ];
+
+  const rtfdPred = { ...newPred }, now = Date.now();
+  if (isObject(oldPred)) {
+    for (const attr of fixedAttrs) {
+      if (!(attr in oldPred)) continue;
+      if (rtfdPred[attr] !== oldPred[attr]) {
+        console.log('In rectifyNewPred, found wrong fixed attrs', oldPred, newPred);
+        rtfdPred[attr] = oldPred[attr];
+      }
+    }
+    rtfdPred.updateDate = now;
+  } else {
+    rtfdPred.updateDate = rtfdPred.createDate;
+    if (rtfdPred.createDate > now || rtfdPred.createDate < (now - 60 * 60 * 1000)) {
+      console.log('In rectifyNewPred, found wrong createDate', oldPred, newPred);
+      [rtfdPred.createDate, rtfdPred.updateDate] = [now, now];
+    }
+  }
+
+  for (const attr of invalidAttrs) {
+    if (attr in rtfdPred) {
+      console.log('In rectifyNewPred, found invalid attrs', oldPred, newPred);
+      delete rtfdPred[attr];
+    }
+  }
+
+  return rtfdPred;
+};
+
 export const getPredStatus = (pred, burnHeight = null) => {
   if ('pStatus' in pred && ![PDG, SCS].includes(pred.pStatus)) {
     return PRED_STATUS_PUT_ERROR;

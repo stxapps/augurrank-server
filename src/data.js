@@ -5,7 +5,9 @@ import {
   NEWSLETTER_EMAIL, USER, PRED, TOTAL, ACTIVE, N_PREDS, GAME_BTC,
   PRED_STATUS_CONFIRMED_OK, SCS,
 } from './const';
-import { isObject, isNumber, mergePreds, getPredStatus, isNotNullIn } from './utils';
+import {
+  isObject, isNumber, mergePreds, rectifyNewPred, getPredStatus, isNotNullIn,
+} from './utils';
 import { AUGURRANK_SERVER_TASKER_URL, AUGURRANK_SERVER_TASKER_EMAIL } from './keys';
 
 const datastore = new Datastore();
@@ -65,6 +67,8 @@ const updatePred = async (logKey, appBtcAddr, stxAddr, pred) => {
     }
 
     newPred = mergePreds(oldPred, pred);
+    newPred = rectifyNewPred(oldPred, newPred);
+
     entities.push({ key: predKey, data: predToEntityData(appBtcAddr, newPred) });
 
     transaction.save(entities);

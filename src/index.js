@@ -3,10 +3,12 @@ import cors from 'cors';
 import { verifyECDSA, publicKeyToBtcAddress } from '@stacks/encryption';
 
 import dataApi from './data';
-import { ALLOWED_ORIGINS, VALID, ERROR, TEST_STRING, GAMES, N_PREDS } from './const';
+import {
+  ALLOWED_ORIGINS, VALID, ERROR, TEST_STRING, GAMES, N_PREDS, PRED_STATUS_VERIFIED_OK,
+} from './const';
 import {
   runAsyncWrapper, getReferrer, randomString, removeTailingSlash, isObject, isString,
-  isNumber, validateEmail, validatePred,
+  isNumber, validateEmail, validatePred, getPredStatus,
 } from './utils';
 
 const corsConfig = cors({
@@ -292,6 +294,16 @@ app.post('/preds', runAsyncWrapper(async (req, res) => {
     results.status = ERROR;
     res.status(500).send(results);
     return;
+  }
+
+  if (reqBody.fthMeStsIfVrfd === true) {
+    const found = results.preds.some(pred => {
+      return getPredStatus(pred) === PRED_STATUS_VERIFIED_OK;
+    });
+    if (found) {
+      const stats = await dataApi.getStats(appBtcAddr, 'me');
+      results.meStats = stats;
+    }
   }
 
   console.log(`(${logKey}) /preds finished`);
