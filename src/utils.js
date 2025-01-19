@@ -134,32 +134,41 @@ export const rectifyNewPred = (oldPred, newPred) => {
     'id', 'game', 'contract', 'value', 'createDate', 'stxAddr', 'cTxId', 'anchorHeight',
     'anchorBurnHeight', 'seq', 'targetBurnHeight',
   ];
-  const invalidAttrs = [
+  const limitedAttrs = [
     'vTxId', 'targetHeight', 'vStatus', 'anchorPrice', 'targetPrice', 'correct',
   ];
 
   const rtfdPred = { ...newPred }, now = Date.now();
-  if (isObject(oldPred)) {
-    for (const attr of fixedAttrs) {
-      if (!(attr in oldPred)) continue;
+
+  for (const attr of fixedAttrs) {
+    if (isObject(oldPred) && attr in oldPred) {
       if (rtfdPred[attr] !== oldPred[attr]) {
-        console.log('In rectifyNewPred, found wrong fixed attrs', oldPred, newPred);
+        console.log('In rectifyNewPred, wrong fixed attrs', oldPred, newPred);
         rtfdPred[attr] = oldPred[attr];
       }
     }
+  }
+  for (const attr of limitedAttrs) {
+    if (isObject(oldPred) && attr in oldPred) {
+      if (rtfdPred[attr] !== oldPred[attr]) {
+        console.log('In rectifyNewPred, wrong existing limited attrs', oldPred, newPred);
+        rtfdPred[attr] = oldPred[attr];
+      }
+    } else {
+      if (attr in rtfdPred) {
+        console.log('In rectifyNewPred, wrong limited attrs', oldPred, newPred);
+        delete rtfdPred[attr];
+      }
+    }
+  }
+
+  if (isObject(oldPred)) {
     rtfdPred.updateDate = now;
   } else {
     rtfdPred.updateDate = rtfdPred.createDate;
     if (rtfdPred.createDate > now || rtfdPred.createDate < (now - 60 * 60 * 1000)) {
-      console.log('In rectifyNewPred, found wrong createDate', oldPred, newPred);
+      console.log('In rectifyNewPred, wrong createDate', oldPred, newPred);
       [rtfdPred.createDate, rtfdPred.updateDate] = [now, now];
-    }
-  }
-
-  for (const attr of invalidAttrs) {
-    if (attr in rtfdPred) {
-      console.log('In rectifyNewPred, found invalid attrs', oldPred, newPred);
-      delete rtfdPred[attr];
     }
   }
 
