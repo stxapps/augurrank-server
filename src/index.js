@@ -1,14 +1,14 @@
 import express from 'express';
 import cors from 'cors';
-import { verifyECDSA, publicKeyToBtcAddress } from '@stacks/encryption';
 
+import authApi from './auth';
 import dataApi from './data';
 import {
-  ALLOWED_ORIGINS, VALID, ERROR, TEST_STRING, GAMES, N_PREDS, PRED_STATUS_VERIFIED_OK,
+  ALLOWED_ORIGINS, VALID, ERROR, GAMES, N_PREDS, PRED_STATUS_VERIFIED_OK,
 } from './const';
 import {
-  runAsyncWrapper, getReferrer, randomString, removeTailingSlash, isObject, isString,
-  isNumber, validateEmail, validatePred, getPredStatus,
+  runAsyncWrapper, getReferrer, randomString, removeTailingSlash, isObject, isNumber,
+  areAllString, validateEmail, validatePred, getPredStatus,
 } from './utils';
 
 const corsConfig = cors({
@@ -81,9 +81,9 @@ app.post('/game', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const { appPubKey, appSigStr, stxAddr } = reqBody;
-  if (!isString(appPubKey) || !isString(appSigStr) || !isString(stxAddr)) {
-    console.log(`(${logKey}) Invalid appPubKey, appSigStr, or stxAddr, return ERROR`);
+  const { stxAddr, stxTstStr, stxPubKey, stxSigStr } = reqBody;
+  if (!areAllString(stxAddr, stxTstStr, stxPubKey, stxSigStr)) {
+    console.log(`(${logKey}) Invalid stx[Addr, TstStr, PubKey or SigStr] return ERROR`);
     results.status = ERROR;
     res.status(400).send(results);
     return;
@@ -97,37 +97,29 @@ app.post('/game', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const verifyResult = verifyECDSA(TEST_STRING, appPubKey, appSigStr);
+  const verifyResult = authApi.verify(stxAddr, stxTstStr, stxPubKey, stxSigStr);
   if (!verifyResult) {
-    console.log(`(${logKey}) Invalid ECDSA, return ERROR`);
+    console.log(`(${logKey}) Invalid authApi.verify, return ERROR`);
     results.status = ERROR;
     res.status(401).send(results);
     return;
   }
 
-  const appBtcAddr = publicKeyToBtcAddress(appPubKey);
-
-  const user = await dataApi.getUser(appBtcAddr);
+  const user = await dataApi.getUser(stxAddr);
   if (!isObject(user)) {
     console.log(`(${logKey}) Not found user, just return`);
     [results.pred, results.stats] = [null, {}];
     res.send(results);
     return;
   }
-  if (user.stxAddr !== stxAddr) {
-    console.log(`(${logKey}) Invalid stxAddr comparison, return ERROR`);
-    results.status = ERROR;
-    res.status(400).send(results);
-    return;
-  }
 
   if (user.didAgreeTerms === true) results.didAgreeTerms = user.didAgreeTerms;
   if (user.isVerified === true) results.isVerified = user.isVerified;
 
-  const pred = await dataApi.getNewestPred(appBtcAddr, game);
+  const pred = await dataApi.getNewestPred(stxAddr, game);
   results.pred = pred;
 
-  const stats = await dataApi.getStats(appBtcAddr, game);
+  const stats = await dataApi.getStats(stxAddr, game);
   results.stats = stats;
 
   console.log(`(${logKey}) /game finished`);
@@ -155,43 +147,35 @@ app.post('/me', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const { appPubKey, appSigStr, stxAddr } = reqBody;
-  if (!isString(appPubKey) || !isString(appSigStr) || !isString(stxAddr)) {
-    console.log(`(${logKey}) Invalid appPubKey, appSigStr, or stxAddr, return ERROR`);
+  const { stxAddr, stxTstStr, stxPubKey, stxSigStr } = reqBody;
+  if (!areAllString(stxAddr, stxTstStr, stxPubKey, stxSigStr)) {
+    console.log(`(${logKey}) Invalid stx[Addr, TstStr, PubKey, or SigStr] return ERROR`);
     results.status = ERROR;
     res.status(400).send(results);
     return;
   }
 
-  const verifyResult = verifyECDSA(TEST_STRING, appPubKey, appSigStr);
+  const verifyResult = authApi.verify(stxAddr, stxTstStr, stxPubKey, stxSigStr);
   if (!verifyResult) {
-    console.log(`(${logKey}) Invalid ECDSA, return ERROR`);
+    console.log(`(${logKey}) Invalid authApi.verify, return ERROR`);
     results.status = ERROR;
     res.status(401).send(results);
     return;
   }
 
-  const appBtcAddr = publicKeyToBtcAddress(appPubKey);
-
-  const user = await dataApi.getUser(appBtcAddr);
+  const user = await dataApi.getUser(stxAddr);
   if (!isObject(user)) {
     console.log(`(${logKey}) Not found user, just return`);
     [results.stats, results.preds, results.hasMore] = [{}, [], false];
     res.send(results);
     return;
   }
-  if (user.stxAddr !== stxAddr) {
-    console.log(`(${logKey}) Invalid stxAddr comparison, return ERROR`);
-    results.status = ERROR;
-    res.status(400).send(results);
-    return;
-  }
 
-  const stats = await dataApi.getStats(appBtcAddr, 'me');
+  const stats = await dataApi.getStats(stxAddr, 'me');
   results.stats = stats;
 
   const { preds, hasMore } = await dataApi.queryPreds(
-    appBtcAddr, 'me', Date.now(), '<=', []
+    stxAddr, 'me', Date.now(), '<=', []
   );
   results.preds = preds;
   results.hasMore = hasMore;
@@ -221,9 +205,9 @@ app.post('/preds', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const { appPubKey, appSigStr, stxAddr } = reqBody;
-  if (!isString(appPubKey) || !isString(appSigStr) || !isString(stxAddr)) {
-    console.log(`(${logKey}) Invalid appPubKey, appSigStr, or stxAddr, return ERROR`);
+  const { stxAddr, stxTstStr, stxPubKey, stxSigStr } = reqBody;
+  if (!areAllString(stxAddr, stxTstStr, stxPubKey, stxSigStr)) {
+    console.log(`(${logKey}) Invalid stx[Addr, TstStr, PubKey or SigStr] return ERROR`);
     results.status = ERROR;
     res.status(400).send(results);
     return;
@@ -248,17 +232,15 @@ app.post('/preds', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const verifyResult = verifyECDSA(TEST_STRING, appPubKey, appSigStr);
+  const verifyResult = authApi.verify(stxAddr, stxTstStr, stxPubKey, stxSigStr);
   if (!verifyResult) {
-    console.log(`(${logKey}) Invalid ECDSA, return ERROR`);
+    console.log(`(${logKey}) Invalid authApi.verify, return ERROR`);
     results.status = ERROR;
     res.status(401).send(results);
     return;
   }
 
-  const appBtcAddr = publicKeyToBtcAddress(appPubKey);
-
-  const user = await dataApi.getUser(appBtcAddr);
+  const user = await dataApi.getUser(stxAddr);
   if (!isObject(user)) {
     console.log(`(${logKey}) Not found user, just return`);
     if (apiCode === 1) {
@@ -274,19 +256,13 @@ app.post('/preds', runAsyncWrapper(async (req, res) => {
     res.send(results);
     return;
   }
-  if (user.stxAddr !== stxAddr) {
-    console.log(`(${logKey}) Invalid stxAddr comparison, return ERROR`);
-    results.status = ERROR;
-    res.status(400).send(results);
-    return;
-  }
 
   if (apiCode === 1) {
-    const preds = await dataApi.getPreds(appBtcAddr, ids);
+    const preds = await dataApi.getPreds(stxAddr, ids);
     results.preds = preds;
   } else if (apiCode === 2) {
     const { preds, hasMore } = await dataApi.queryPreds(
-      appBtcAddr, game, createDate, operator, excludingIds
+      stxAddr, game, createDate, operator, excludingIds
     );
     [results.preds, results.hasMore] = [preds, hasMore];
   } else {
@@ -301,7 +277,7 @@ app.post('/preds', runAsyncWrapper(async (req, res) => {
       return getPredStatus(pred) === PRED_STATUS_VERIFIED_OK;
     });
     if (found) {
-      const stats = await dataApi.getStats(appBtcAddr, 'me');
+      const stats = await dataApi.getStats(stxAddr, 'me');
       results.meStats = stats;
     }
   }
@@ -331,44 +307,31 @@ app.post('/pred', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const { appPubKey, appSigStr, stxAddr } = reqBody;
-  if (!isString(appPubKey) || !isString(appSigStr) || !isString(stxAddr)) {
-    console.log(`(${logKey}) Invalid appPubKey, appSigStr, or stxAddr, return ERROR`);
+  const { stxAddr, stxTstStr, stxPubKey, stxSigStr } = reqBody;
+  if (!areAllString(stxAddr, stxTstStr, stxPubKey, stxSigStr)) {
+    console.log(`(${logKey}) Invalid stx[Addr, TstStr, PubKey or SigStr] return ERROR`);
     results.status = ERROR;
     res.status(400).send(results);
     return;
   }
 
   const { pred } = reqBody;
-  if (!validatePred(pred)) {
+  if (!validatePred(stxAddr, pred)) {
     console.log(`(${logKey}) Invalid pred, return ERROR`);
     results.status = ERROR;
     res.status(400).send(results);
     return;
   }
 
-  const verifyResult = verifyECDSA(TEST_STRING, appPubKey, appSigStr);
+  const verifyResult = authApi.verify(stxAddr, stxTstStr, stxPubKey, stxSigStr);
   if (!verifyResult) {
-    console.log(`(${logKey}) Invalid ECDSA, return ERROR`);
+    console.log(`(${logKey}) Invalid authApi.verify, return ERROR`);
     results.status = ERROR;
     res.status(401).send(results);
     return;
   }
 
-  const appBtcAddr = publicKeyToBtcAddress(appPubKey);
-
-  const udtCode = await dataApi.updatePred(logKey, appBtcAddr, stxAddr, pred);
-  if (udtCode === -1) {
-    console.log(`(${logKey}) Invalid stxAddr comparison, return ERROR`);
-    results.status = ERROR;
-    res.status(400).send(results);
-    return;
-  } else if (udtCode === -2) {
-    console.log(`(${logKey}) Invalid appBtcAddr comparison, return ERROR`);
-    results.status = ERROR;
-    res.status(400).send(results);
-    return;
-  }
+  await dataApi.updatePred(logKey, stxAddr, pred);
 
   console.log(`(${logKey}) /pred finished`);
   res.send(results);

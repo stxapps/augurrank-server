@@ -32,8 +32,8 @@ const addNewsletterEmail = async (logKey, email) => {
   console.log(`(${logKey}) Saved to Datastore`);
 };
 
-const updatePred = async (logKey, appBtcAddr, stxAddr, pred) => {
-  const userKey = datastore.key([USER, appBtcAddr]);
+const updatePred = async (logKey, stxAddr, pred) => {
+  const userKey = datastore.key([USER, stxAddr]);
   const predKey = datastore.key([PRED, pred.id]);
 
   const transaction = datastore.transaction();
@@ -45,31 +45,23 @@ const updatePred = async (logKey, appBtcAddr, stxAddr, pred) => {
 
     const [oldUserEntity] = await transaction.get(userKey);
     if (isObject(oldUserEntity)) {
-      if (oldUserEntity.stxAddr !== stxAddr) {
-        await transaction.rollback();
-        return -1;
-      }
       oldUser = entityToUser(oldUserEntity);
     } else {
       newUser = {
-        appBtcAddr, stxAddr, createDate: now, updateDate: now, didAgreeTerms: true,
+        stxAddr, createDate: now, updateDate: now, didAgreeTerms: true,
       };
       entities.push({ key: userKey, data: userToEntityData(newUser) });
     }
 
     const [oldPredEntity] = await transaction.get(predKey);
     if (isObject(oldPredEntity)) {
-      if (oldPredEntity.appBtcAddr !== appBtcAddr) {
-        await transaction.rollback();
-        return -2;
-      }
       oldPred = entityToPred(oldPredEntity);
     }
 
     newPred = mergePreds(oldPred, pred);
     newPred = rectifyNewPred(oldPred, newPred);
 
-    entities.push({ key: predKey, data: predToEntityData(appBtcAddr, newPred) });
+    entities.push({ key: predKey, data: predToEntityData(newPred) });
 
     transaction.save(entities);
     await transaction.commit();
@@ -83,18 +75,18 @@ const updatePred = async (logKey, appBtcAddr, stxAddr, pred) => {
   }
 };
 
-const getUser = async (appBtcAddr) => {
-  const key = datastore.key([USER, appBtcAddr]);
+const getUser = async (stxAddr) => {
+  const key = datastore.key([USER, stxAddr]);
   const [entity] = await datastore.get(key);
 
   const user = isObject(entity) ? entityToUser(entity) : null;
   return user;
 };
 
-const getNewestPred = async (appBtcAddr, game) => {
+const getNewestPred = async (stxAddr, game) => {
   const query = datastore.createQuery(PRED);
   query.filter(and([
-    new PropertyFilter('appBtcAddr', '=', appBtcAddr),
+    new PropertyFilter('stxAddr', '=', stxAddr),
     new PropertyFilter('game', '=', game),
   ]));
   query.order('createDate', { descending: true });
@@ -108,27 +100,27 @@ const getNewestPred = async (appBtcAddr, game) => {
   return pred;
 };
 
-const getPreds = async (appBtcAddr, ids) => {
+const getPreds = async (stxAddr, ids) => {
   const keys = ids.map(id => datastore.key([PRED, id]));
   const [entities] = await datastore.get(keys);
 
   const preds = [];
   if (Array.isArray(entities)) {
     for (const entity of entities) {
-      if (!isObject(entity) || entity.appBtcAddr !== appBtcAddr) continue;
+      if (!isObject(entity) || entity.stxAddr !== stxAddr) continue;
       preds.push(entityToPred(entity));
     }
   }
   return preds;
 };
 
-const queryPreds = async (appBtcAddr, game, createDate, operator, excludingIds) => {
+const queryPreds = async (stxAddr, game, createDate, operator, excludingIds) => {
   let descending = false;
   if (operator.includes('<')) descending = true;
 
   const limit = N_PREDS + excludingIds.length + 1;
 
-  const fltrs = /** @type any[] */([new PropertyFilter('appBtcAddr', '=', appBtcAddr)]);
+  const fltrs = /** @type any[] */([new PropertyFilter('stxAddr', '=', stxAddr)]);
   if (game !== 'me') fltrs.push(new PropertyFilter('game', '=', game));
   fltrs.push(new PropertyFilter('createDate', operator, new Date(createDate)));
 
@@ -160,10 +152,10 @@ const queryPreds = async (appBtcAddr, game, createDate, operator, excludingIds) 
   return { preds, hasMore };
 };
 
-const getStats = async (appBtcAddr, game) => {
+const getStats = async (stxAddr, game) => {
   const keyNames = [];
   if (game === GAME_BTC) {
-    keyNames.push('GameBtc-count-appBtcAddr'); // number of participants
+    keyNames.push('GameBtc-count-stxAddr'); // number of participants
     keyNames.push('GameBtc-up-verified_ok-TRUE-count'); // wins
     keyNames.push('GameBtc-up-verified_ok-FALSE-count'); // losses
     keyNames.push('GameBtc-down-verified_ok-TRUE-count'); // wins
@@ -171,18 +163,18 @@ const getStats = async (appBtcAddr, game) => {
     keyNames.push('GameBtc-up-confirmed_ok-count'); // up pending
     keyNames.push('GameBtc-down-confirmed_ok-count'); // down pending
   } else if (game === 'me') {
-    keyNames.push(`${appBtcAddr}-up-verified_ok-TRUE-count`); // wins
-    keyNames.push(`${appBtcAddr}-up-verified_ok-FALSE-count`); // losses
-    keyNames.push(`${appBtcAddr}-down-verified_ok-TRUE-count`); // wins
-    keyNames.push(`${appBtcAddr}-down-verified_ok-FALSE-count`); // losses
-    keyNames.push(`${appBtcAddr}-up-confirmed_ok-count`); // up pending
-    keyNames.push(`${appBtcAddr}-down-confirmed_ok-count`); // down pending
-    keyNames.push(`${appBtcAddr}-confirmed_ok-count-cont-day`); // continue days so far
-    keyNames.push(`${appBtcAddr}-verified_ok-TRUE-count-cont`); // cont. wins so far
-    keyNames.push(`${appBtcAddr}-verified_ok-FALSE-count-cont`); // cont. losses so far
-    keyNames.push(`${appBtcAddr}-confirmed_ok-max-cont-day`); // max cont. days
-    keyNames.push(`${appBtcAddr}-verified_ok-TRUE-max-cont`); // max cont. wins
-    keyNames.push(`${appBtcAddr}-verified_ok-FALSE-max-cont`); // max cont. losses
+    keyNames.push(`${stxAddr}-up-verified_ok-TRUE-count`); // wins
+    keyNames.push(`${stxAddr}-up-verified_ok-FALSE-count`); // losses
+    keyNames.push(`${stxAddr}-down-verified_ok-TRUE-count`); // wins
+    keyNames.push(`${stxAddr}-down-verified_ok-FALSE-count`); // losses
+    keyNames.push(`${stxAddr}-up-confirmed_ok-count`); // up pending
+    keyNames.push(`${stxAddr}-down-confirmed_ok-count`); // down pending
+    keyNames.push(`${stxAddr}-confirmed_ok-count-cont-day`); // continue days so far
+    keyNames.push(`${stxAddr}-verified_ok-TRUE-count-cont`); // cont. wins so far
+    keyNames.push(`${stxAddr}-verified_ok-FALSE-count-cont`); // cont. losses so far
+    keyNames.push(`${stxAddr}-confirmed_ok-max-cont-day`); // max cont. days
+    keyNames.push(`${stxAddr}-verified_ok-TRUE-max-cont`); // max cont. wins
+    keyNames.push(`${stxAddr}-verified_ok-FALSE-max-cont`); // max cont. losses
   }
 
   const keys = keyNames.map(kn => datastore.key([TOTAL, kn]));
@@ -231,7 +223,6 @@ const addTaskToQueue = async (logKey, oldUser, newUser, oldPred, newPred) => {
 
 const userToEntityData = (user) => {
   const data = [
-    { name: 'stxAddr', value: user.stxAddr },
     { name: 'createDate', value: new Date(user.createDate) },
     { name: 'updateDate', value: new Date(user.updateDate) },
   ];
@@ -244,17 +235,17 @@ const userToEntityData = (user) => {
   return data;
 };
 
-const predToEntityData = (appBtcAddr, pred) => {
+const predToEntityData = (pred) => {
   // Need cStatus, vTxId, and vStatus for Datastore queries in worker.
   let isCstRqd = false, isVxiRqd = false, isVstRqd = false;
 
   const data = [
+    { name: 'stxAddr', value: pred.stxAddr },
     { name: 'game', value: pred.game },
     { name: 'contract', value: pred.contract },
     { name: 'value', value: pred.value },
     { name: 'createDate', value: new Date(pred.createDate) },
     { name: 'updateDate', value: new Date(pred.updateDate) },
-    { name: 'stxAddr', value: pred.stxAddr },
   ];
   if ('cTxId' in pred) {
     data.push({ name: 'cTxId', value: pred.cTxId });
@@ -303,16 +294,12 @@ const predToEntityData = (appBtcAddr, pred) => {
     data.push({ name: 'correct', value: pred.correct });
   }
 
-  // IMPORTANT: pred doesn't have appBtcAddr, but predEntity must have it!
-  data.push({ name: 'appBtcAddr', value: appBtcAddr });
-
   return data;
 };
 
 const entityToUser = (entity) => {
   const user = {
-    appBtcAddr: entity[datastore.KEY].name,
-    stxAddr: entity.stxAddr,
+    stxAddr: entity[datastore.KEY].name,
     createDate: entity.createDate.getTime(),
     updateDate: entity.updateDate.getTime(),
   };
@@ -325,12 +312,12 @@ const entityToUser = (entity) => {
 const entityToPred = (entity) => {
   const pred = {
     id: entity[datastore.KEY].name,
+    stxAddr: entity.stxAddr,
     game: entity.game,
     contract: entity.contract,
     value: entity.value,
     createDate: entity.createDate.getTime(),
     updateDate: entity.updateDate.getTime(),
-    stxAddr: entity.stxAddr,
   };
   if (isNotNullIn(entity, 'cTxId')) pred.cTxId = entity.cTxId;
   if (isNotNullIn(entity, 'pStatus')) pred.pStatus = entity.pStatus;

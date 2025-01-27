@@ -2,14 +2,14 @@ indexes:
 
 - kind: Pred
   properties:
-  - name: appBtcAddr
+  - name: stxAddr
   - name: game
   - name: createDate
     direction: desc
 
 - kind: Pred
   properties:
-  - name: appBtcAddr
+  - name: stxAddr
   - name: createDate
     direction: desc
 

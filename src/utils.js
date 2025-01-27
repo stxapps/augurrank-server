@@ -45,6 +45,13 @@ export const isNumber = (val) => {
   return typeof val === 'number' && isFinite(val);
 };
 
+export const areAllString = (...vals) => {
+  for (const val of vals) {
+    if (!isString(val)) return false;
+  }
+  return true;
+};
+
 export const validateEmail = (email) => {
   if (!isString(email)) return false;
 
@@ -52,16 +59,16 @@ export const validateEmail = (email) => {
   return emailRegex.test(email);
 };
 
-export const validatePred = (pred) => {
+export const validatePred = (stxAddr, pred) => {
   if (!isObject(pred)) return false;
 
   if (!isString(pred.id)) return false;
+  if (!isString(pred.stxAddr) || pred.stxAddr !== stxAddr) return false;
   if (!GAMES.includes(pred.game)) return false;
   if (!isString(pred.contract)) return false;
   if (!isString(pred.value)) return false;
   if (!isNumber(pred.createDate)) return false;
   if (!isNumber(pred.updateDate)) return false;
-  if (!isString(pred.stxAddr)) return false;
 
   if ('cTxId' in pred && !isString(pred.cTxId)) return false;
   if ('pStatus' in pred && !isString(pred.pStatus)) return false;
@@ -131,7 +138,7 @@ export const mergePreds = (...preds) => {
 
 export const rectifyNewPred = (oldPred, newPred) => {
   const fixedAttrs = [
-    'id', 'game', 'contract', 'value', 'createDate', 'stxAddr', 'cTxId', 'anchorHeight',
+    'id', 'stxAddr', 'game', 'contract', 'value', 'createDate', 'cTxId', 'anchorHeight',
     'anchorBurnHeight', 'seq', 'targetBurnHeight',
   ];
   const limitedAttrs = [

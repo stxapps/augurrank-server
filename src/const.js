@@ -28,7 +28,7 @@ export const TOTAL = 'Total';
 // Status
 export const ACTIVE = 'Active';
 
-export const TEST_STRING = 'Vision on Chain';
+export const STX_TST_STR = 'Please sign this message to prove you own your STX address so we can give you access to our server.';
 
 export const GAME_BTC = 'GameBtc';
 export const GAMES = [GAME_BTC];
