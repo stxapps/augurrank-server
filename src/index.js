@@ -81,9 +81,9 @@ app.post('/game', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const { stxAddr, stxTstStr, stxPubKey, stxSigStr } = reqBody;
-  if (!areAllString(stxAddr, stxTstStr, stxPubKey, stxSigStr)) {
-    console.log(`(${logKey}) Invalid stx[Addr, TstStr, PubKey or SigStr] return ERROR`);
+  const { stxAddr, stxPubKey, stxTstStr, stxSigStr } = reqBody;
+  if (!areAllString(stxAddr, stxPubKey, stxTstStr, stxSigStr)) {
+    console.log(`(${logKey}) Invalid stx[Addr, PubKey, TstStr or SigStr] return ERROR`);
     results.status = ERROR;
     res.status(400).send(results);
     return;
@@ -97,7 +97,7 @@ app.post('/game', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const verifyResult = authApi.verify(stxAddr, stxTstStr, stxPubKey, stxSigStr);
+  const verifyResult = authApi.verify(stxAddr, stxPubKey, stxTstStr, stxSigStr);
   if (!verifyResult) {
     console.log(`(${logKey}) Invalid authApi.verify, return ERROR`);
     results.status = ERROR;
@@ -147,15 +147,15 @@ app.post('/me', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const { stxAddr, stxTstStr, stxPubKey, stxSigStr } = reqBody;
-  if (!areAllString(stxAddr, stxTstStr, stxPubKey, stxSigStr)) {
+  const { stxAddr, stxPubKey, stxTstStr, stxSigStr } = reqBody;
+  if (!areAllString(stxAddr, stxPubKey, stxTstStr, stxSigStr)) {
     console.log(`(${logKey}) Invalid stx[Addr, TstStr, PubKey, or SigStr] return ERROR`);
     results.status = ERROR;
     res.status(400).send(results);
     return;
   }
 
-  const verifyResult = authApi.verify(stxAddr, stxTstStr, stxPubKey, stxSigStr);
+  const verifyResult = authApi.verify(stxAddr, stxPubKey, stxTstStr, stxSigStr);
   if (!verifyResult) {
     console.log(`(${logKey}) Invalid authApi.verify, return ERROR`);
     results.status = ERROR;
@@ -205,8 +205,8 @@ app.post('/preds', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const { stxAddr, stxTstStr, stxPubKey, stxSigStr } = reqBody;
-  if (!areAllString(stxAddr, stxTstStr, stxPubKey, stxSigStr)) {
+  const { stxAddr, stxPubKey, stxTstStr, stxSigStr } = reqBody;
+  if (!areAllString(stxAddr, stxPubKey, stxTstStr, stxSigStr)) {
     console.log(`(${logKey}) Invalid stx[Addr, TstStr, PubKey or SigStr] return ERROR`);
     results.status = ERROR;
     res.status(400).send(results);
@@ -232,7 +232,7 @@ app.post('/preds', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const verifyResult = authApi.verify(stxAddr, stxTstStr, stxPubKey, stxSigStr);
+  const verifyResult = authApi.verify(stxAddr, stxPubKey, stxTstStr, stxSigStr);
   if (!verifyResult) {
     console.log(`(${logKey}) Invalid authApi.verify, return ERROR`);
     results.status = ERROR;
@@ -307,8 +307,8 @@ app.post('/pred', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const { stxAddr, stxTstStr, stxPubKey, stxSigStr } = reqBody;
-  if (!areAllString(stxAddr, stxTstStr, stxPubKey, stxSigStr)) {
+  const { stxAddr, stxPubKey, stxTstStr, stxSigStr } = reqBody;
+  if (!areAllString(stxAddr, stxPubKey, stxTstStr, stxSigStr)) {
     console.log(`(${logKey}) Invalid stx[Addr, TstStr, PubKey or SigStr] return ERROR`);
     results.status = ERROR;
     res.status(400).send(results);
@@ -323,7 +323,7 @@ app.post('/pred', runAsyncWrapper(async (req, res) => {
     return;
   }
 
-  const verifyResult = authApi.verify(stxAddr, stxTstStr, stxPubKey, stxSigStr);
+  const verifyResult = authApi.verify(stxAddr, stxPubKey, stxTstStr, stxSigStr);
   if (!verifyResult) {
     console.log(`(${logKey}) Invalid authApi.verify, return ERROR`);
     results.status = ERROR;
