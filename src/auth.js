@@ -11,17 +11,25 @@ const verify = (stxAddr, stxPubKey, stxTstStr, stxSigStr) => {
   const addr = getAddressFromPublicKey(stxPubKey);
   if (addr !== stxAddr) return false;
 
-  let rst = verifyMessageSignatureRsv({
-    publicKey: stxPubKey, message: stxTstStr, signature: stxSigStr,
-  });
+  let rst = false;
+  try {
+    rst = verifyMessageSignatureRsv({
+      publicKey: stxPubKey, message: stxTstStr, signature: stxSigStr,
+    });
+  } catch (error) { }
   if (rst === true) return rst;
 
-  rst = verifyMessageSignature({
-    publicKey: stxPubKey, message: stxTstStr, signature: stxSigStr,
-  });
+  try {
+    rst = verifyMessageSignature({
+      publicKey: stxPubKey, message: stxTstStr, signature: stxSigStr,
+    });
+  } catch (error) { }
   if (rst === true) return rst;
 
-  rst = verifyECDSA(stxTstStr, stxPubKey, stxSigStr);
+  try {
+    rst = verifyECDSA(stxTstStr, stxPubKey, stxSigStr);
+  } catch (error) { }
+
   return rst;
 };
 
