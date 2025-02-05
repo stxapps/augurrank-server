@@ -45,6 +45,10 @@ export const isNumber = (val) => {
   return typeof val === 'number' && isFinite(val);
 };
 
+export const isFldStr = (val) => {
+  return isString(val) && val.length > 0;
+};
+
 export const areAllString = (...vals) => {
   for (const val of vals) {
     if (!isString(val)) return false;
@@ -52,11 +56,30 @@ export const areAllString = (...vals) => {
   return true;
 };
 
+export const newObject = (object, ignoreAttrs) => {
+  const nObject = {};
+  for (const attr in object) {
+    if (ignoreAttrs.includes(attr)) continue;
+    nObject[attr] = object[attr];
+  }
+  return nObject;
+};
+
 export const validateEmail = (email) => {
   if (!isString(email)) return false;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+};
+
+export const validateUser = (stxAddr, user) => {
+  if (!isObject(user)) return false;
+
+  if ('username' in user && !isString(user.username)) return false;
+  if ('avatar' in user && !isString(user.avatar)) return false;
+  if ('bio' in user && !isString(user.bio)) return false;
+
+  return true;
 };
 
 export const validatePred = (stxAddr, pred) => {

@@ -8,7 +8,7 @@ import {
 } from './const';
 import {
   runAsyncWrapper, getReferrer, randomString, removeTailingSlash, isObject, isNumber,
-  areAllString, validateEmail, validatePred, getPredStatus,
+  isFldStr, areAllString, validateEmail, validateUser, validatePred, getPredStatus,
 } from './utils';
 
 const corsConfig = cors({
@@ -113,8 +113,9 @@ app.post('/game', runAsyncWrapper(async (req, res) => {
     return;
   }
 
+  if (isFldStr(user.username)) results.username = user.username;
+  if (isFldStr(user.avatar)) results.avatar = user.avatar;
   if (user.didAgreeTerms === true) results.didAgreeTerms = user.didAgreeTerms;
-  if (user.isVerified === true) results.isVerified = user.isVerified;
 
   const pred = await dataApi.getNewestPred(stxAddr, game);
   results.pred = pred;
@@ -170,6 +171,10 @@ app.post('/me', runAsyncWrapper(async (req, res) => {
     res.send(results);
     return;
   }
+
+  if (isFldStr(user.username)) results.username = user.username;
+  if (isFldStr(user.avatar)) results.avatar = user.avatar;
+  if (isFldStr(user.bio)) results.avatar = user.bio;
 
   const stats = await dataApi.getStats(stxAddr, 'me');
   results.stats = stats;
@@ -283,6 +288,57 @@ app.post('/preds', runAsyncWrapper(async (req, res) => {
   }
 
   console.log(`(${logKey}) /preds finished`);
+  res.send(results);
+}));
+
+app.post('/user', runAsyncWrapper(async (req, res) => {
+  const logKey = randomString(12);
+  console.log(`(${logKey}) /user receives a post request`);
+
+  const results = { status: VALID };
+
+  const referrer = getReferrer(req);
+  console.log(`(${logKey}) Referrer: ${referrer}`);
+  if (!referrer || !ALLOWED_ORIGINS.includes(removeTailingSlash(referrer))) {
+    console.log(`(${logKey}) Not expected referrer.`);
+  }
+
+  const reqBody = req.body;
+  console.log(`(${logKey}) Request body: ${JSON.stringify(reqBody)}`);
+  if (!isObject(reqBody)) {
+    console.log(`(${logKey}) Invalid reqBody, return ERROR`);
+    results.status = ERROR;
+    res.status(400).send(results);
+    return;
+  }
+
+  const { stxAddr, stxPubKey, stxTstStr, stxSigStr } = reqBody;
+  if (!areAllString(stxAddr, stxPubKey, stxTstStr, stxSigStr)) {
+    console.log(`(${logKey}) Invalid stx[Addr, TstStr, PubKey or SigStr] return ERROR`);
+    results.status = ERROR;
+    res.status(400).send(results);
+    return;
+  }
+
+  const { user } = reqBody;
+  if (!validateUser(stxAddr, user)) {
+    console.log(`(${logKey}) Invalid user, return ERROR`);
+    results.status = ERROR;
+    res.status(400).send(results);
+    return;
+  }
+
+  const verifyResult = authApi.verify(stxAddr, stxPubKey, stxTstStr, stxSigStr);
+  if (!verifyResult) {
+    console.log(`(${logKey}) Invalid authApi.verify, return ERROR`);
+    results.status = ERROR;
+    res.status(401).send(results);
+    return;
+  }
+
+  await dataApi.updateUser(logKey, stxAddr, user);
+
+  console.log(`(${logKey}) /user finished`);
   res.send(results);
 }));
 

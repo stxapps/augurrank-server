@@ -6,7 +6,8 @@ import {
   PRED_STATUS_CONFIRMED_OK, SCS,
 } from './const';
 import {
-  isObject, isNumber, mergePreds, rectifyNewPred, getPredStatus, isNotNullIn,
+  isObject, isNumber, isFldStr, newObject, mergePreds, rectifyNewPred, getPredStatus,
+  isNotNullIn,
 } from './utils';
 import { AUGURRANK_SERVER_TASKER_URL, AUGURRANK_SERVER_TASKER_EMAIL } from './keys';
 
@@ -30,6 +31,79 @@ const addNewsletterEmail = async (logKey, email) => {
 
   await datastore.save(newEntity);
   console.log(`(${logKey}) Saved to Datastore`);
+};
+
+const updateUser = async (logKey, stxAddr, user) => {
+  const userKey = datastore.key([USER, stxAddr]);
+
+  const transaction = datastore.transaction();
+  try {
+    await transaction.run();
+
+    const [oldEntity] = await transaction.get(userKey);
+    if (!isObject(oldEntity)) {
+      throw new Error(`Not found user for stxAddr: ${stxAddr}`);
+    }
+    const oldUser = entityToUser(oldEntity);
+
+    const attrs = ['username', 'avatar', 'bio', 'usnVrfDt', 'avtVrfDt'];
+    const newUser = newObject(oldUser, attrs);
+
+    let isDiff = false;
+    if (isFldStr(oldUser.username) && isFldStr(user.username)) {
+      if (oldUser.username === user.username) {
+        [newUser.username, newUser.usnVrfDt] = [oldUser.username, oldUser.usnVrfDt];
+      } else {
+        [newUser.username, newUser.usnVrfDt, isDiff] = [user.username, null, true];
+      }
+    } else if (isFldStr(user.username)) {
+      [newUser.username, newUser.usnVrfDt, isDiff] = [user.username, null, true];
+    } else if (isFldStr(oldUser.username) && !('username' in user)) {
+      [newUser.username, newUser.usnVrfDt] = [oldUser.username, oldUser.usnVrfDt];
+    } else if (isFldStr(oldUser.username)) {
+      isDiff = true;
+    }
+
+    if (isFldStr(oldUser.avatar) && isFldStr(user.avatar)) {
+      if (oldUser.avatar === user.avatar) {
+        [newUser.avatar, newUser.avtVrfDt] = [oldUser.avatar, oldUser.avtVrfDt];
+      } else {
+        [newUser.avatar, newUser.avtVrfDt, isDiff] = [user.avatar, null, true];
+      }
+    } else if (isFldStr(user.avatar)) {
+      [newUser.avatar, newUser.avtVrfDt, isDiff] = [user.avatar, null, true];
+    } else if (isFldStr(oldUser.avatar) && !('avatar' in user)) {
+      [newUser.avatar, newUser.avtVrfDt] = [oldUser.avatar, oldUser.avtVrfDt];
+    } else if (isFldStr(oldUser.avatar)) {
+      isDiff = true;
+    }
+
+    if (isFldStr(oldUser.bio) && isFldStr(user.bio)) {
+      if (oldUser.bio === user.bio) {
+        newUser.bio = oldUser.bio;
+      } else {
+        [newUser.bio, isDiff] = [user.bio, true];
+      }
+    } else if (isFldStr(user.bio)) {
+      [newUser.bio, isDiff] = [user.bio, true];
+    } else if (isFldStr(oldUser.bio) && !('bio' in user)) {
+      newUser.bio = oldUser.bio;
+    } else if (isFldStr(oldUser.bio)) {
+      isDiff = true;
+    }
+
+    if (isDiff) {
+      newUser.updateDate = Date.now();
+
+      transaction.save({ key: userKey, data: userToEntityData(newUser) });
+      await transaction.commit();
+    } else {
+      await transaction.rollback();
+    }
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 };
 
 const updatePred = async (logKey, stxAddr, pred) => {
@@ -67,11 +141,9 @@ const updatePred = async (logKey, stxAddr, pred) => {
     await transaction.commit();
 
     await addTaskToQueue(logKey, oldUser, newUser, oldPred, newPred);
-
-    return 0;
-  } catch (e) {
-    await transaction.rollback(); // wait and see if should retry
-    throw e;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
   }
 };
 
@@ -226,11 +298,25 @@ const userToEntityData = (user) => {
     { name: 'createDate', value: new Date(user.createDate) },
     { name: 'updateDate', value: new Date(user.updateDate) },
   ];
+  if ('username' in user) {
+    data.push({ name: 'username', value: user.username });
+
+    let usnVrfDt = null;
+    if ('usnVrfDt' in user) usnVrfDt = user.usnVrfDt;
+    data.push({ name: 'usnVrfDt', value: usnVrfDt });
+  }
+  if ('avatar' in user) {
+    data.push({ name: 'avatar', value: user.avatar, excludeFromIndexes: true });
+
+    let avtVrfDt = null;
+    if ('avtVrfDt' in user) avtVrfDt = user.avtVrfDt;
+    data.push({ name: 'avtVrfDt', value: avtVrfDt });
+  }
+  if ('bio' in user) {
+    data.push({ name: 'bio', value: user.bio, excludeFromIndexes: true });
+  }
   if ('didAgreeTerms' in user) {
     data.push({ name: 'didAgreeTerms', value: user.didAgreeTerms });
-  }
-  if ('isVerified' in user) {
-    data.push({ name: 'isVerified', value: user.isVerified });
   }
   return data;
 };
@@ -303,8 +389,10 @@ const entityToUser = (entity) => {
     createDate: entity.createDate.getTime(),
     updateDate: entity.updateDate.getTime(),
   };
+  if (isNotNullIn(entity, 'username')) user.username = entity.username;
+  if (isNotNullIn(entity, 'avatar')) user.avatar = entity.avatar;
+  if (isNotNullIn(entity, 'bio')) user.bio = entity.bio;
   if (isNotNullIn(entity, 'didAgreeTerms')) user.didAgreeTerms = entity.didAgreeTerms;
-  if (isNotNullIn(entity, 'isVerified')) user.isVerified = entity.isVerified;
 
   return user;
 };
@@ -341,8 +429,8 @@ const entityToPred = (entity) => {
 };
 
 const data = {
-  addNewsletterEmail, updatePred, getUser, getNewestPred, getPreds, queryPreds,
-  getStats,
+  addNewsletterEmail, updateUser, updatePred, getUser, getNewestPred, getPreds,
+  queryPreds, getStats,
 };
 
 export default data;
