@@ -7,7 +7,7 @@ import {
 } from './const';
 import {
   isObject, isNumber, isFldStr, newObject, mergePreds, rectifyNewPred, getPredStatus,
-  isNotNullIn,
+  isNotNullIn, isAvatarEqual,
 } from './utils';
 import { AUGURRANK_SERVER_TASKER_URL, AUGURRANK_SERVER_TASKER_EMAIL } from './keys';
 
@@ -65,7 +65,7 @@ const updateUser = async (logKey, stxAddr, user) => {
     }
 
     if (isFldStr(oldUser.avatar) && isFldStr(user.avatar)) {
-      if (oldUser.avatar === user.avatar) {
+      if (isAvatarEqual(oldUser.avatar, user.avatar)) {
         [newUser.avatar, newUser.avtVrfDt] = [oldUser.avatar, oldUser.avtVrfDt];
       } else {
         [newUser.avatar, newUser.avtVrfDt, isDiff] = [user.avatar, null, true];

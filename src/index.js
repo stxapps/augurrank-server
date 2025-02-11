@@ -174,7 +174,7 @@ app.post('/me', runAsyncWrapper(async (req, res) => {
 
   if (isFldStr(user.username)) results.username = user.username;
   if (isFldStr(user.avatar)) results.avatar = user.avatar;
-  if (isFldStr(user.bio)) results.avatar = user.bio;
+  if (isFldStr(user.bio)) results.bio = user.bio;
 
   const stats = await dataApi.getStats(stxAddr, 'me');
   results.stats = stats;
