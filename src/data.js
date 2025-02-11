@@ -304,14 +304,14 @@ const userToEntityData = (user) => {
     data.push({ name: 'username', value: user.username });
 
     let usnVrfDt = null;
-    if ('usnVrfDt' in user) usnVrfDt = user.usnVrfDt;
+    if (isNumber(user.usnVrfDt)) usnVrfDt = new Date(user.usnVrfDt);
     data.push({ name: 'usnVrfDt', value: usnVrfDt });
   }
   if ('avatar' in user) {
     data.push({ name: 'avatar', value: user.avatar, excludeFromIndexes: true });
 
     let avtVrfDt = null;
-    if ('avtVrfDt' in user) avtVrfDt = user.avtVrfDt;
+    if (isNumber(user.avtVrfDt)) avtVrfDt = new Date(user.avtVrfDt);
     data.push({ name: 'avtVrfDt', value: avtVrfDt });
   }
   if ('bio' in user) {
@@ -391,8 +391,16 @@ const entityToUser = (entity) => {
     createDate: entity.createDate.getTime(),
     updateDate: entity.updateDate.getTime(),
   };
-  if (isNotNullIn(entity, 'username')) user.username = entity.username;
-  if (isNotNullIn(entity, 'avatar')) user.avatar = entity.avatar;
+  if (isNotNullIn(entity, 'username')) {
+    user.username = entity.username;
+    user.usnVrfDt = null;
+    if (isNotNullIn(entity, 'usnVrfDt')) user.usnVrfDt = entity.usnVrfDt.getTime();
+  }
+  if (isNotNullIn(entity, 'avatar')) {
+    user.avatar = entity.avatar;
+    user.avtVrfDt = null;
+    if (isNotNullIn(entity, 'avtVrfDt')) user.avtVrfDt = entity.avtVrfDt.getTime();
+  }
   if (isNotNullIn(entity, 'bio')) user.bio = entity.bio;
   if (isNotNullIn(entity, 'didAgreeTerms')) user.didAgreeTerms = entity.didAgreeTerms;
 
