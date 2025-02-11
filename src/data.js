@@ -40,14 +40,18 @@ const updateUser = async (logKey, stxAddr, user) => {
   try {
     await transaction.run();
 
-    const [oldEntity] = await transaction.get(userKey);
-    if (!isObject(oldEntity)) {
-      throw new Error(`Not found user for stxAddr: ${stxAddr}`);
-    }
-    const oldUser = entityToUser(oldEntity);
-
+    let oldUser = null, newUser = null;
     const attrs = ['username', 'avatar', 'bio', 'usnVrfDt', 'avtVrfDt'];
-    const newUser = newObject(oldUser, attrs);
+    const now = Date.now();
+
+    const [oldEntity] = await transaction.get(userKey);
+    if (isObject(oldEntity)) {
+      oldUser = entityToUser(oldEntity);
+      newUser = { ...newObject(oldUser, attrs), updateDate: now };
+    } else {
+      oldUser = /** @type any */({});
+      newUser = /** @type any */({ stxAddr, createDate: now, updateDate: now });
+    }
 
     let isDiff = false;
     if (isFldStr(oldUser.username) && isFldStr(user.username)) {
@@ -93,8 +97,6 @@ const updateUser = async (logKey, stxAddr, user) => {
     }
 
     if (isDiff) {
-      newUser.updateDate = Date.now();
-
       transaction.save({ key: userKey, data: userToEntityData(newUser) });
       await transaction.commit();
     } else {
