@@ -108,14 +108,15 @@ app.post('/game', runAsyncWrapper(async (req, res) => {
   const user = await dataApi.getUser(stxAddr);
   if (!isObject(user)) {
     console.log(`(${logKey}) Not found user, just return`);
+    [results.username, results.avatar, results.didAgreeTerms] = [null, null, null];
     [results.pred, results.stats] = [null, {}];
     res.send(results);
     return;
   }
 
-  if (isFldStr(user.username)) results.username = user.username;
-  if (isFldStr(user.avatar)) results.avatar = user.avatar;
-  if (user.didAgreeTerms === true) results.didAgreeTerms = user.didAgreeTerms;
+  results.username = isFldStr(user.username) ? user.username : null;
+  results.avatar = isFldStr(user.avatar) ? user.avatar : null;
+  results.didAgreeTerms = (user.didAgreeTerms === true) ? true : null;
 
   const pred = await dataApi.getNewestPred(stxAddr, game);
   results.pred = pred;
@@ -167,14 +168,15 @@ app.post('/me', runAsyncWrapper(async (req, res) => {
   const user = await dataApi.getUser(stxAddr);
   if (!isObject(user)) {
     console.log(`(${logKey}) Not found user, just return`);
+    [results.username, results.avatar, results.bio] = [null, null, null];
     [results.stats, results.preds, results.hasMore] = [{}, [], false];
     res.send(results);
     return;
   }
 
-  if (isFldStr(user.username)) results.username = user.username;
-  if (isFldStr(user.avatar)) results.avatar = user.avatar;
-  if (isFldStr(user.bio)) results.bio = user.bio;
+  results.username = isFldStr(user.username) ? user.username : null;
+  results.avatar = isFldStr(user.avatar) ? user.avatar : null;
+  results.bio = isFldStr(user.bio) ? user.bio : null;
 
   const stats = await dataApi.getStats(stxAddr, 'me');
   results.stats = stats;
