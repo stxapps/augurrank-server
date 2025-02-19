@@ -28,3 +28,10 @@ indexes:
   properties:
   - name: vStatus
   - name: createDate
+
+- kind: Total
+  properties:
+  - name: formula
+  - name: game
+  - name: outcome
+    direction: desc
