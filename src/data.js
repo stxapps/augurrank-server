@@ -41,7 +41,7 @@ const updateUser = async (logKey, stxAddr, user) => {
     await transaction.run();
 
     let oldUser = null, newUser = null;
-    const attrs = ['username', 'avatar', 'bio', 'usnVrfDt', 'avtVrfDt'];
+    const attrs = ['username', 'avatar', 'bio', 'usnVrfDt', 'avtVrfDt', 'noInLdb'];
     const now = Date.now();
 
     const [oldEntity] = await transaction.get(userKey);
@@ -93,6 +93,16 @@ const updateUser = async (logKey, stxAddr, user) => {
     } else if (isFldStr(oldUser.bio) && !('bio' in user)) {
       newUser.bio = oldUser.bio;
     } else if (isFldStr(oldUser.bio)) {
+      isDiff = true;
+    }
+
+    if (oldUser.noInLdb === true && user.noInLdb === true) {
+      newUser.noInLdb = true;
+    } else if (user.noInLdb === true) {
+      [newUser.noInLdb, isDiff] = [true, true];
+    } else if (oldUser.noInLdb === true && !('noInLdb' in user)) {
+      newUser.noInLdb = true;
+    } else if (oldUser.noInLdb === true) {
       isDiff = true;
     }
 
@@ -320,6 +330,9 @@ const userToEntityData = (user) => {
   if ('didAgreeTerms' in user) {
     data.push({ name: 'didAgreeTerms', value: user.didAgreeTerms });
   }
+  if ('noInLdb' in user) {
+    data.push({ name: 'noInLdb', value: user.noInLdb });
+  }
   return data;
 };
 
@@ -403,6 +416,7 @@ const entityToUser = (entity) => {
   }
   if (isNotNullIn(entity, 'bio')) user.bio = entity.bio;
   if (isNotNullIn(entity, 'didAgreeTerms')) user.didAgreeTerms = entity.didAgreeTerms;
+  if (isNotNullIn(entity, 'noInLdb')) user.noInLdb = entity.noInLdb;
 
   return user;
 };

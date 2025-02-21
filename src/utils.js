@@ -116,6 +116,7 @@ export const validateUser = (stxAddr, user) => {
     if (!isString(user.bio)) return false;
     if (user.bio.length > 160) return false;
   }
+  if ('noInLdb' in user && ![true, false].includes(user.noInLdb)) return false;
 
   return true;
 };
