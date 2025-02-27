@@ -29,6 +29,11 @@ indexes:
   - name: vStatus
   - name: createDate
 
+- kind: Pred
+  properties:
+  - name: vStatus
+  - name: updateDate
+
 - kind: Total
   properties:
   - name: formula
